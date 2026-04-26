@@ -9,6 +9,8 @@ on:
 jobs:
   update-sheet:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +25,11 @@ jobs:
       - name: Update Google Sheet
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
           SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-          # Set these to your repo, or override via repository variables
+          # Override via repository variables if needed; otherwise the script
+          # falls back to GITHUB_REPOSITORY (set automatically by Actions).
           REPO_OWNER: ${{ vars.REPO_OWNER }}
           REPO_NAME: ${{ vars.REPO_NAME }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        if: env.GOOGLE_SA_KEY != ''
         run: python .github/scripts/project-tracker/update_project_sheet.py

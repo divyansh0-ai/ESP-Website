@@ -31,8 +31,46 @@ from google.oauth2.service_account import Credentials
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 GOOGLE_SA_KEY = os.environ["GOOGLE_SA_KEY"]
 SHEET_ID = os.environ["SHEET_ID"]
-REPO_OWNER = os.environ.get("REPO_OWNER", "learning-unlimited")
-REPO_NAME = os.environ.get("REPO_NAME", "ESP-Website")
+
+# ---------------------------------------------------------------------------
+# Validate required secrets/env-vars up front so contributors see a clear
+# error message rather than a cryptic failure deep in the stack.
+# ---------------------------------------------------------------------------
+_MISSING: list[str] = []
+for _var, _hint in [
+    ("GITHUB_TOKEN",  "Provided automatically by Actions – should never be missing."),
+    ("GOOGLE_SA_KEY", "Add a repo secret named GOOGLE_SA_KEY with the "
+                      "Google service-account JSON."),
+    ("SHEET_ID",      "Add a repo secret named GOOGLE_SHEET_ID with the "
+                      "spreadsheet ID from the sheet URL."),
+]:
+    if not os.environ.get(_var):
+        _MISSING.append(f"  • {_var}: {_hint}")
+
+if _MISSING:
+    print(
+        "ERROR: The following required environment variables are missing or empty:\n"
+        + "\n".join(_MISSING)
+        + "\n\nAdd them as repository secrets under "
+          "Settings → Secrets and variables → Actions.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+# REPO_OWNER / REPO_NAME can be set via repository variables.  When those vars
+# are absent the workflow injects an empty string, so we fall back to parsing
+# the always-present GITHUB_REPOSITORY ("owner/repo") before the hard-coded
+# defaults.  Using `or` instead of a default arg catches the empty-string case.
+def _parse_github_repository() -> tuple[str, str]:
+    gh_repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if "/" in gh_repo:
+        owner, _, name = gh_repo.partition("/")
+        return owner, name
+    return "learning-unlimited", "ESP-Website"
+
+_default_owner, _default_name = _parse_github_repository()
+REPO_OWNER = os.environ.get("REPO_OWNER") or _default_owner
+REPO_NAME = os.environ.get("REPO_NAME") or _default_name
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 
