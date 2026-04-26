@@ -28,6 +28,31 @@ from google.oauth2.service_account import Credentials
 # Configuration
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Validate required secrets/env-vars before doing any work so we get a clear
+# error message instead of a cryptic failure deep in the stack.
+# ---------------------------------------------------------------------------
+_MISSING: list[str] = []
+for _var, _hint in [
+    ("GITHUB_TOKEN",  "Provided automatically by Actions – should never be missing."),
+    ("GOOGLE_SA_KEY", "Add a repo secret named GOOGLE_SA_KEY containing the "
+                      "Google service-account JSON."),
+    ("SHEET_ID",      "Add a repo secret named GOOGLE_SHEET_ID with the "
+                      "spreadsheet ID from the sheet URL."),
+]:
+    if not os.environ.get(_var):
+        _MISSING.append(f"  • {_var}: {_hint}")
+
+if _MISSING:
+    print(
+        "ERROR: The following required environment variables are missing or empty:\n"
+        + "\n".join(_MISSING)
+        + "\n\nPlease add them as repository secrets under "
+          "Settings → Secrets and variables → Actions.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 GOOGLE_SA_KEY = os.environ["GOOGLE_SA_KEY"]
 SHEET_ID = os.environ["SHEET_ID"]
