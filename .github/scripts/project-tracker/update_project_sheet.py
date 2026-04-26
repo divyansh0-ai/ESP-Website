@@ -31,8 +31,21 @@ from google.oauth2.service_account import Credentials
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 GOOGLE_SA_KEY = os.environ["GOOGLE_SA_KEY"]
 SHEET_ID = os.environ["SHEET_ID"]
-REPO_OWNER = os.environ.get("REPO_OWNER", "learning-unlimited")
-REPO_NAME = os.environ.get("REPO_NAME", "ESP-Website")
+
+# REPO_OWNER / REPO_NAME can be set via repository variables.  When those vars
+# are absent the workflow injects an empty string, so we fall back to parsing
+# the always-present GITHUB_REPOSITORY ("owner/repo") before the hard-coded
+# defaults.  Using `or` instead of a default arg catches the empty-string case.
+def _parse_github_repository() -> tuple[str, str]:
+    gh_repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if "/" in gh_repo:
+        owner, _, name = gh_repo.partition("/")
+        return owner, name
+    return "learning-unlimited", "ESP-Website"
+
+_default_owner, _default_name = _parse_github_repository()
+REPO_OWNER = os.environ.get("REPO_OWNER") or _default_owner
+REPO_NAME = os.environ.get("REPO_NAME") or _default_name
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 
